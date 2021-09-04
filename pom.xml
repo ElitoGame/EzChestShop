@@ -6,7 +6,7 @@
 
     <groupId>me.deadlight</groupId>
     <artifactId>EzChestShop</artifactId>
-    <version>1.4.0</version>
+    <version>1.4.1</version>
     <packaging>jar</packaging>
 
     <name>EzChestShop</name>
@@ -157,10 +157,10 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>RELEASE</version>
-            <scope>compile</scope>
+            <groupId>com.github.Slimefun</groupId>
+            <artifactId>Slimefun4</artifactId>
+            <version>RC-27</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>
