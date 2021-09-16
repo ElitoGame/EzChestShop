@@ -1,9 +1,11 @@
 package me.deadlight.ezchestshop.GUIs;
 
+import me.deadlight.ezchestshop.Data.Config;
 import me.deadlight.ezchestshop.Data.ShopContainer;
 import me.deadlight.ezchestshop.EzChestShop;
 import me.deadlight.ezchestshop.Data.LanguageManager;
 import me.deadlight.ezchestshop.Listeners.ChatListener;
+import me.deadlight.ezchestshop.Listeners.PlayerCloseToChestListener;
 import me.deadlight.ezchestshop.Utils.Objects.ChatWaitObject;
 import me.deadlight.ezchestshop.Utils.LogType;
 import me.deadlight.ezchestshop.Utils.Utils;
@@ -47,7 +49,7 @@ public class SettingsGUI {
         Gui gui = new Gui(3, lm.settingsGuiTitle());
         ItemStack glassis = new ItemStack(Material.BLACK_STAINED_GLASS_PANE, 1);
         ItemMeta glassmeta = glassis.getItemMeta();
-        glassmeta.setDisplayName(Utils.color("&d"));
+        glassmeta.setDisplayName(Utils.colorify("&d"));
         glassis.setItemMeta(glassmeta);
         GuiItem glasses = new GuiItem(glassis, event -> {
             event.setCancelled(true);
@@ -257,6 +259,37 @@ public class SettingsGUI {
 
 
 
+        String rotation = dataContainer.get(new NamespacedKey(EzChestShop.getPlugin(), "rotation"), PersistentDataType.STRING);
+        rotation = rotation == null ? "up" : rotation;
+        ItemStack rotationItemStack= new ItemStack(Material.COMPASS, 1);
+        ItemMeta rotationItemMeta = rotationItemStack.getItemMeta();
+        rotationItemMeta.setDisplayName(lm.rotateHologramButtonTitle());
+        rotationItemMeta.setLore(lm.rotateHologramButtonLore(rotation));
+        rotationItemStack.setItemMeta(rotationItemMeta);
+        GuiItem rotationItem = new GuiItem(rotationItemStack, event -> {
+            event.setCancelled(true);
+            String next_rotation;
+            if (event.getClick() == ClickType.LEFT) {
+                next_rotation = Utils.getPreviousRotation(ShopContainer.getShopSettings(containerBlock.getLocation()).getRotation());
+            } else if (event.getClick() == ClickType.RIGHT) {
+                next_rotation = Utils.getNextRotation(ShopContainer.getShopSettings(containerBlock.getLocation()).getRotation());
+            } else {
+                return;
+            }
+            TileState state = ((TileState)containerBlock.getState());
+            state.getPersistentDataContainer().set(new NamespacedKey(EzChestShop.getPlugin(), "rotation"), PersistentDataType.STRING, next_rotation);
+            state.update();
+            player.sendMessage(lm.rotateHologramInChat(next_rotation));
+            ItemMeta meta = event.getCurrentItem().getItemMeta();
+            meta.setLore(lm.rotateHologramButtonLore(next_rotation));
+            event.getCurrentItem().setItemMeta(meta);
+            ShopContainer.getShopSettings(containerBlock.getLocation()).setRotation(next_rotation);
+            if (Config.holodistancing) {
+                PlayerCloseToChestListener.hideHologram(containerBlock.getLocation());
+            }
+        });
+        
+
 
 
         ItemStack backItemStack = new ItemStack(Material.DARK_OAK_DOOR, 1);
@@ -301,7 +334,11 @@ public class SettingsGUI {
 
         gui.setItem(0, backItem);
         //14-15-16
-        gui.setItem(14, glasses);
+        if (Config.holo_rotation) {
+            gui.setItem(14, rotationItem);
+        } else {
+            gui.setItem(14, glasses);
+        }
         gui.setItem(15, glasses);
         gui.setItem(16, glasses);
         //17-26

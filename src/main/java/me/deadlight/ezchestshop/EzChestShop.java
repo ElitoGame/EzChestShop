@@ -3,8 +3,6 @@ import com.bgsoftware.wildchests.api.WildChestsAPI;
 import com.bgsoftware.wildchests.api.handlers.ChestsManager;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
-import io.github.thebusybiscuit.slimefun4.utils.SlimefunUtils;
 import me.deadlight.ezchestshop.Commands.EcsAdmin;
 import me.deadlight.ezchestshop.Commands.MainCommands;
 import me.deadlight.ezchestshop.Data.Config;
@@ -18,7 +16,6 @@ import me.deadlight.ezchestshop.Utils.CommandRegister;
 import me.deadlight.ezchestshop.Utils.FloatingItem;
 import me.deadlight.ezchestshop.Utils.Exceptions.CommandFetchException;
 import me.deadlight.ezchestshop.Utils.Utils;
-import me.mrCookieSlime.Slimefun.api.BlockStorage;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
@@ -52,7 +49,7 @@ public final class EzChestShop extends JavaPlugin {
     public void onEnable() {
 
         plugin = this;
-        logConsole("&c[&eEzChestShop&c] &aEnabling EzChestShop - version 1.4.2");
+        logConsole("&c[&eEzChestShop&c] &aEnabling EzChestShop - version 1.4.3");
         saveDefaultConfig();
 
         this.db = new SQLite(this);
@@ -90,10 +87,15 @@ public final class EzChestShop extends JavaPlugin {
             return;
         }
 
-        loadLanguages();
         try {
-            Utils.checkForConfigYMLupdate();
-            Utils.checkForLanguagesYMLupdate();
+            Config.checkForConfigYMLupdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        LanguageManager.loadLanguages();
+        try {
+            LanguageManager.checkForLanguagesYMLupdate();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -160,26 +162,6 @@ public final class EzChestShop extends JavaPlugin {
     }
 
 
-    public void loadLanguages() {
-        LanguageManager lm = new LanguageManager();
-        File customConfigFile = new File(getDataFolder(), "languages.yml");
-        if (!customConfigFile.exists()) {
-            logConsole("&c[&eEzChestShop&c] &eGenerating languages.yml file...");
-            customConfigFile.getParentFile().mkdirs();
-            saveResource("languages.yml", false);
-            languages = YamlConfiguration.loadConfiguration(customConfigFile);
-            lm.setLanguageConfig(languages);
-            logConsole("&c[&eEzChestShop&c] &elanguages.yml successfully loaded");
-        } else {
-            languages = YamlConfiguration.loadConfiguration(customConfigFile);
-            lm.setLanguageConfig(languages);
-            logConsole("&c[&eEzChestShop&c] &elanguages.yml successfully loaded");
-        }
-    }
-
-
-
-
 
     @Override
     public void onDisable() {
@@ -217,8 +199,13 @@ public final class EzChestShop extends JavaPlugin {
         return manager;
     }
 
-    public void logConsole(String str) {
-        getServer().getConsoleSender().sendMessage(Utils.color(str));
+    public static void logConsole(String str) {
+        EzChestShop.getPlugin().getServer().getConsoleSender().sendMessage(Utils.colorify(str));
+    }
+
+    public static void logDebug(String str) {
+        if (Config.debug_logging)
+            EzChestShop.getPlugin().getServer().getConsoleSender().sendMessage("[Debug] " + Utils.colorify(str));
     }
 
     private boolean setupEconomy() {
@@ -239,14 +226,6 @@ public final class EzChestShop extends JavaPlugin {
 
     public Database getDatabase() {
         return this.db;
-    }
-
-    public static FileConfiguration getLanguages() {
-        return languages;
-    }
-
-    public static void setLanguages(FileConfiguration file) {
-        languages = file;
     }
 
 

@@ -46,7 +46,7 @@ public class AdminShopGUI {
         boolean disabledBuy = data.get(new NamespacedKey(EzChestShop.getPlugin(), "dbuy"), PersistentDataType.INTEGER) == 1;
         boolean disabledSell = data.get(new NamespacedKey(EzChestShop.getPlugin(), "dsell"), PersistentDataType.INTEGER) == 1;
 
-        ItemStack mainitem = Utils.getItem(data.get(new NamespacedKey(EzChestShop.getPlugin(), "item"), PersistentDataType.STRING));
+        ItemStack mainitem = Utils.decodeItem(data.get(new NamespacedKey(EzChestShop.getPlugin(), "item"), PersistentDataType.STRING));
         ItemStack guiMainItem = mainitem.clone();
         ItemMeta mainmeta = guiMainItem.getItemMeta();
         List<String> mainItemLore = Arrays.asList(lm.initialBuyPrice(buyPrice), lm.initialSellPrice(sellPrice));
@@ -59,7 +59,7 @@ public class AdminShopGUI {
         Gui gui = new Gui(3, lm.guiAdminTitle(shopOwner));
         ItemStack glassis = new ItemStack(Material.BLACK_STAINED_GLASS_PANE, 1);
         ItemMeta glassmeta = glassis.getItemMeta();
-        glassmeta.setDisplayName(Utils.color("&d"));
+        glassmeta.setDisplayName(Utils.colorify("&d"));
         glassis.setItemMeta(glassmeta);
 
         GuiItem glasses = new GuiItem(glassis, event -> {
@@ -109,7 +109,7 @@ public class AdminShopGUI {
 
         ItemStack oneBuyIS = new ItemStack(Material.LIME_DYE, 1);
         ItemMeta meta3 = oneBuyIS.getItemMeta();
-        meta3.setDisplayName(Utils.color(lm.buttonBuy1Title()));
+        meta3.setDisplayName(Utils.colorify(lm.buttonBuy1Title()));
         List<String> lores3 = Arrays.asList(lm.buttonBuy1Lore(roundDecimals(buyPrice)));
         meta3.setLore(lores3);
         oneBuyIS.setItemMeta(meta3);
@@ -127,7 +127,7 @@ public class AdminShopGUI {
 
         ItemStack moreBuyIS = new ItemStack(Material.LIME_DYE, 64);
         ItemMeta meta4 = moreBuyIS.getItemMeta();
-        meta4.setDisplayName(Utils.color(lm.buttonBuy64Title()));
+        meta4.setDisplayName(Utils.colorify(lm.buttonBuy64Title()));
         List<String> lores4 = Arrays.asList(lm.buttonBuy64Lore(roundDecimals(buyPrice * 64)));
         meta4.setLore(lores4);
         moreBuyIS.setItemMeta(meta4);
@@ -182,7 +182,10 @@ public class AdminShopGUI {
         ItemStack signItem = new ItemStack(Material.OAK_SIGN, 1);
         ItemMeta signMeta = signItem.getItemMeta();
         signMeta.setDisplayName(lm.customAmountSignTitle());
-        List<String> possibleCounts = Utils.calculatePossibleAmount(Bukkit.getOfflinePlayer(player.getUniqueId()), offlinePlayerOwner, player.getInventory().getStorageContents(), Utils.getBlockInventory(containerBlock).getStorageContents(), buyPrice, sellPrice, mainitem);
+        List<String> possibleCounts = Utils.calculatePossibleAmount(Bukkit.getOfflinePlayer(player.getUniqueId()),
+                offlinePlayerOwner, player.getInventory().getStorageContents(),
+                Utils.getBlockInventory(containerBlock).getStorageContents(),
+                buyPrice, sellPrice, mainitem);
         signMeta.setLore(lm.customAmountSignLore(possibleCounts.get(0), possibleCounts.get(1)));
         signItem.setItemMeta(signMeta);
 
@@ -318,8 +321,9 @@ public class AdminShopGUI {
                     sharedIncomeCheck(((TileState)chest.getState()).getPersistentDataContainer(), price);
                     Utils.getBlockInventory(chest).removeItem(thatItem);
                     player.getInventory().addItem(thatItem);
-                    transactionMessage(((TileState)chest.getState()).getPersistentDataContainer(), owner, Bukkit.getOfflinePlayer(player.getUniqueId()), price, true, Utils.getFinalItemName(tthatItem), count, chest.getLocation().getBlock());
-                    player.sendMessage(Utils.color(lm.messageSuccBuy(price)));
+                    transactionMessage(((TileState)chest.getState()).getPersistentDataContainer(), owner, Bukkit.getOfflinePlayer(player.getUniqueId()),
+                            price, true, Utils.getFinalItemName(tthatItem), count, chest.getLocation().getBlock());
+                    player.sendMessage(Utils.colorify(lm.messageSuccBuy(price)));
                     player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
 
                 } else {
@@ -356,7 +360,8 @@ public class AdminShopGUI {
                     getandgive(owner, price, Bukkit.getOfflinePlayer(player.getUniqueId()));
                     player.getInventory().removeItem(thatItem);
                     Utils.getBlockInventory(chest).addItem(thatItem);
-                    transactionMessage(data, owner, Bukkit.getOfflinePlayer(player.getUniqueId()), price, false, Utils.getFinalItemName(tthatItem), count, chest.getLocation().getBlock());
+                    transactionMessage(data, owner, Bukkit.getOfflinePlayer(player.getUniqueId()), price, false,
+                            Utils.getFinalItemName(tthatItem), count, chest.getLocation().getBlock());
                     player.sendMessage(lm.messageSuccSell(price));
                     player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
 
