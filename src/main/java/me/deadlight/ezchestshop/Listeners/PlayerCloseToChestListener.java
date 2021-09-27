@@ -7,6 +7,7 @@ import me.deadlight.ezchestshop.EzChestShop;
 import me.deadlight.ezchestshop.Utils.ASHologram;
 import me.deadlight.ezchestshop.Utils.FloatingItem;
 import me.deadlight.ezchestshop.Utils.Utils;
+import me.mrCookieSlime.Slimefun.api.BlockStorage;
 import org.bukkit.*;
 import org.bukkit.block.*;
 import org.bukkit.craftbukkit.libs.org.apache.commons.lang3.tuple.Pair;
@@ -108,6 +109,12 @@ public class PlayerCloseToChestListener implements Listener {
             ShopContainer.getShops().stream()
                     .filter(sloc -> sloc != null && loc.getWorld().equals(sloc.getWorld()) && loc.distance(sloc) < Config.holodistancing_distance + 5)
                     .forEach(sloc -> {
+                        if (EzChestShop.slimefun) {
+                            if (BlockStorage.hasBlockInfo(sloc)) {
+                                ShopContainer.deleteShop(sloc);
+                                return;
+                            }
+                        }
                         double dist = loc.distance(sloc);
                         //Show the Hologram if Player close enough
                         if (dist < Config.holodistancing_distance) {
@@ -247,6 +254,11 @@ public class PlayerCloseToChestListener implements Listener {
         Location lineLocation = spawnLocation.clone().subtract(0, 0.1, 0);
         String itemname = "Error";
         itemname = Utils.getFinalItemName(thatItem);
+        List<String> possibleCounts = Utils.calculatePossibleAmount(Bukkit.getOfflinePlayer(player.getUniqueId()),
+                Bukkit.getOfflinePlayer(UUID.fromString(((TileState) shopLocation.getBlock().getState()).getPersistentDataContainer()
+                        .get(new NamespacedKey(EzChestShop.getPlugin(), "owner"), PersistentDataType.STRING))), player.getInventory().getStorageContents(),
+                Utils.getBlockInventory(shopLocation.getBlock()).getStorageContents(),
+                buy, sell, thatItem);
         List<String> structure = new ArrayList<>(is_adminshop ? Config.holostructure_admin : Config.holostructure);
         if (ShopContainer.getShopSettings(shopLocation).getRotation().equals("down")) Collections.reverse(structure);
         for (String element : structure) {
@@ -255,7 +267,8 @@ public class PlayerCloseToChestListener implements Listener {
                 lineLocation.add(0, 0.35 * Config.holo_linespacing, 0);
             } else {
                 String line = Utils.colorify(element.replace("%item%", itemname).replace("%buy%", Utils.formatNumber(buy, Utils.FormatType.HOLOGRAM)).
-                        replace("%sell%", Utils.formatNumber(sell, Utils.FormatType.HOLOGRAM)).replace("%currency%", Config.currency).replace("%owner%", shop_owner));
+                        replace("%sell%", Utils.formatNumber(sell, Utils.FormatType.HOLOGRAM)).replace("%currency%", Config.currency)
+                        .replace("%owner%", shop_owner).replace("%maxbuy%", possibleCounts.get(0)).replace("%maxsell%", possibleCounts.get(1)));
                 if (is_dbuy || is_dsell) {
                     line = line.replaceAll("<separator>.*?<\\/separator>", "");
                     if (is_dbuy && is_dsell) {
@@ -313,7 +326,7 @@ public class PlayerCloseToChestListener implements Listener {
 
     public static void hideHologram(Location loc) {
         if (Config.holodistancing) {
-            Bukkit.getOnlinePlayers().stream().filter(p -> p.getLocation().distance(loc) < Config.holodistancing_distance + 5).forEach(p -> {
+            Bukkit.getOnlinePlayers().stream().filter(p -> p.getWorld().equals(loc.getWorld())).filter(p -> p.getLocation().distance(loc) < Config.holodistancing_distance + 5).forEach(p -> {
                 hideHologram(p, loc);
                 if (Config.holo_rotation) {
                     List<Player> players = playershopTextmap.get(loc);

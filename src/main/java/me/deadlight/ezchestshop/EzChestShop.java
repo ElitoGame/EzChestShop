@@ -21,11 +21,9 @@ import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.File;
 import java.io.IOException;
 
 public final class EzChestShop extends JavaPlugin {
@@ -42,15 +40,22 @@ public final class EzChestShop extends JavaPlugin {
 
     public static boolean protocollib = false;
     public static boolean slimefun = false;
+    public static boolean worldguard = false;
 
     private static ProtocolManager manager;
 
+
+//    @Override
+//    public void onLoad() {
+//        // Adds Custom Flags to WorldGuard!
+//
+//    }
 
     @Override
     public void onEnable() {
 
         plugin = this;
-        logConsole("&c[&eEzChestShop&c] &aEnabling EzChestShop - version 1.4.3");
+        logConsole("&c[&eEzChestShop&c] &aEnabling EzChestShop - version " + this.getDescription().getVersion());
         saveDefaultConfig();
 
         this.db = new SQLite(this);
@@ -118,7 +123,13 @@ public final class EzChestShop extends JavaPlugin {
             logConsole("&c[&eEzChestShop&c] &eSlimefun integration initialized.");
         }
 
+
         ShopContainer.queryShopsToMemory();
+
+//        if (getServer().getPluginManager().getPlugin("WorldGuard") != null) {
+//            worldguard = true;
+//            FlagRegistry.onLoad();
+//        }
 
     }
 

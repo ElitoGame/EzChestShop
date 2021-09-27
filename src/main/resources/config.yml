@@ -1,6 +1,6 @@
 # EzChestShop plugin configuration
 # Before starting to config, please note that any usage of TABs in the config file may break the plugin so avoid using tabs and use space.
-# If you need help/found a bug, contact me on Discord: Dead_Light#5608
+# If you need help/found a bug, please join our Discord: https://discord.gg/AQdWzUsuNz
 language: Locale_EN
 shops:
   hologram:
@@ -9,6 +9,8 @@ shops:
     # represents the holographic texts of chestshops. Use %item% to display the item's display name.
     # Use [item] for 1 Line to display the floating item. Use %buy% for buy price and %sell% for sell price.
     # %currency% is defined under economy.server-currency and %owner% represents the shops creator.
+    # %maxbuy% & %maxsell% can be used to define the maximum amount a player can buy/sell to a shop at this time.
+    # The HTML like <buy></buy> Syntax allows the plugin to remove parts of the message if buy/sell are disabled.
     holo-structure:
       - "<buy>&fBuy: &a%buy% %currency%</buy><separator> &f| </separator><sell>&fSell: &c%sell% %currency%</sell>"
       - "&d%item%"
