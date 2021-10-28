@@ -1,11 +1,12 @@
 package me.deadlight.ezchestshop.Data;
-
 import me.deadlight.ezchestshop.Data.SQLite.Database;
+import me.deadlight.ezchestshop.Enums.Changes;
 import me.deadlight.ezchestshop.Events.PlayerTransactEvent;
 import me.deadlight.ezchestshop.EzChestShop;
 import me.deadlight.ezchestshop.Listeners.PlayerCloseToChestListener;
 import me.deadlight.ezchestshop.Utils.Objects.EzShop;
 import me.deadlight.ezchestshop.Utils.Objects.ShopSettings;
+import me.deadlight.ezchestshop.Utils.Objects.SqlQueue;
 import me.deadlight.ezchestshop.Utils.Utils;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
@@ -16,10 +17,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * ShopContainer - a tool to retrieve and store data regarding shops,
@@ -37,29 +35,7 @@ public class ShopContainer {
      */
     public static void queryShopsToMemory() {
         Database db = EzChestShop.getPlugin().getDatabase();
-        for (String sloc : db.getKeys("location", "shopdata")) {
-            boolean msgtoggle = db.getBool("location", sloc,
-                    "msgToggle", "shopdata");
-            boolean dbuy =  db.getBool("location", sloc,
-                    "buyDisabled", "shopdata");
-            boolean dsell = db.getBool("location", sloc,
-                    "sellDisabled", "shopdata");
-            String admins = db.getString("location", sloc,
-                    "admins", "shopdata");
-            boolean shareincome = db.getBool("location", sloc,
-                    "shareIncome", "shopdata");
-            String trans = db.getString("location", sloc,
-                    "transactions", "shopdata");
-            boolean adminshop = db.getBool("location", sloc,
-                    "adminshop", "shopdata");
-            String rotation = db.getString("location", sloc,
-                    "rotation", "shopdata");
-            rotation = rotation == null ? Config.settings_defaults_rotation : rotation;
-            ShopSettings settings = new ShopSettings(sloc, msgtoggle, dbuy, dsell, admins, shareincome, trans, adminshop, rotation);
-            Location loc = Utils.StringtoLocation(sloc);
-            EzShop shop = new EzShop(loc, settings);
-            shopMap.put(loc, shop);
-        }
+        shopMap = db.queryShops();
     }
 
     /**
@@ -72,10 +48,7 @@ public class ShopContainer {
         db.deleteEntry("location", Utils.LocationtoString(loc),
                 "shopdata");
         shopMap.remove(loc);
-
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            PlayerCloseToChestListener.hideHologram(p, loc);
-        }
+        EzShop.hideHologram(loc);
     }
 
     /**
@@ -92,7 +65,7 @@ public class ShopContainer {
         String encodedItem = Utils.encodeItem(item);
         db.insertShop(sloc, p.getUniqueId().toString(), encodedItem == null ? "Error" : encodedItem, buyprice, sellprice, msgtoggle, dbuy, dsell, admins, shareincome, trans, adminshop, rotation);
         ShopSettings settings = new ShopSettings(sloc, msgtoggle, dbuy, dsell, admins, shareincome, trans, adminshop, rotation);
-        EzShop shop = new EzShop(loc, settings);
+        EzShop shop = new EzShop(loc, p, item, buyprice, sellprice, settings);
         shopMap.put(loc, shop);
     }
 
@@ -117,7 +90,7 @@ public class ShopContainer {
         db.insertShop(sloc, owner, encodedItem == null ? "Error" : encodedItem, buyprice, sellprice, msgtoggle, dbuy, dsell, admins, shareincome, trans, adminshop, rotation);
 
         ShopSettings settings = new ShopSettings(sloc, msgtoggle, dbuy, dsell, admins, shareincome, trans, adminshop, rotation);
-        EzShop shop = new EzShop(loc, settings);
+        EzShop shop = new EzShop(loc, owner, Utils.decodeItem(encodedItem), buyprice, sellprice, settings);
         shopMap.put(loc, shop);;
     }
 
@@ -182,6 +155,26 @@ public class ShopContainer {
         return new ArrayList<>(shopMap.keySet());
     }
 
+    /**
+     * Get a Shop from Memory using it's location.
+     *
+     * @param loc
+     * @return
+     */
+    public static EzShop getShop(Location loc) {
+        return shopMap.get(loc);
+    }
+
+    /**
+     * Get a Shop from Memory using it's location as a String.
+     *
+     * @param sloc
+     * @return
+     */
+    public static EzShop getShop(String sloc) {
+        return shopMap.get(Utils.StringtoLocation(sloc));
+    }
+
     public static ShopSettings getShopSettings(Location loc) {
         if (shopMap.containsKey(loc)) {
             return shopMap.get(loc).getSettings();
@@ -205,7 +198,7 @@ public class ShopContainer {
             String rotation = dataContainer.get(new NamespacedKey(EzChestShop.getPlugin(), "rotation"), PersistentDataType.STRING);
             rotation = rotation == null ? Config.settings_defaults_rotation : rotation;
             ShopSettings settings = new ShopSettings(sloc, msgtoggle, dbuy, dsell, admins, shareincome, trans, adminshop, rotation);
-            EzShop shop = new EzShop(loc, settings);
+            EzShop shop = new EzShop(loc, owner, Utils.decodeItem(encodedItem), buyprice, sellprice, settings);
             shopMap.put(loc, shop);
             return settings;
         }
@@ -432,6 +425,34 @@ public class ShopContainer {
         }
 
     }
+
+
+    public static void startSqlQueueTask() {
+        Bukkit.getScheduler().runTaskTimer(EzChestShop.getPlugin(), new Runnable() {
+            @Override
+            public void run() {
+
+                //now looping through all shops and executing mysql commands
+                for (EzShop shop : shopMap.values()) {
+                    if (shop.getSqlQueue().isChanged()) {
+                        //ok then it's time to execute the mysql thingys
+                        SqlQueue queue = shop.getSqlQueue();
+                        HashMap<Changes, Object> changes = queue.getChangesList();
+                        for (Changes change : changes.keySet()) {
+                            //mysql job / you can get the value using Changes.
+                        }
+
+
+                        //the last thing has to be clearing the SqlQueue object so don't remove this
+                        queue.resetChangeList(shop.getSettings()); //giving new shop settings to keep the queue updated
+
+                    }
+                }
+
+            }
+        }, 0, 20 * 60); //for now leaving it as non-editable value
+    }
+
 /*
 
             db.getDouble("location", sloc,
