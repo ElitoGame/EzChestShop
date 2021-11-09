@@ -1,7 +1,8 @@
 package me.deadlight.ezchestshop.Utils;
+import me.deadlight.ezchestshop.Data.ShopContainer;
+import me.deadlight.ezchestshop.Utils.Objects.EzShop;
 import me.deadlight.ezchestshop.Utils.Objects.TransactionLogObject;
 import net.md_5.bungee.api.chat.*;
-import net.md_5.bungee.api.chat.hover.content.Text;
 import net.minecraft.nbt.NBTTagCompound;
 import org.bukkit.*;
 import me.deadlight.ezchestshop.Data.Config;
@@ -189,34 +190,7 @@ public class Utils {
                 || (isShulkerBox(type) && Config.container_shulkers);
     }
 
-    /**
-     * When Double chests are an option, this method makes sure the correct Persistent Datacontainer is used.
-     * @param target
-     * @return
-     */
-    public static Block getCorrectBlock(Block target) {
-        if (target == null) return null;
-        Inventory inventory = Utils.getBlockInventory(target);
-        if (inventory instanceof DoubleChestInventory) {
-            //double chest
 
-            DoubleChest doubleChest = (DoubleChest) inventory.getHolder();
-            Chest leftchest = (Chest) doubleChest.getLeftSide();
-            Chest rightchest = (Chest) doubleChest.getRightSide();
-
-            if (leftchest.getPersistentDataContainer().has(new NamespacedKey(EzChestShop.getPlugin(), "owner"), PersistentDataType.STRING)
-                    || rightchest.getPersistentDataContainer().has(new NamespacedKey(EzChestShop.getPlugin(), "owner"), PersistentDataType.STRING)) {
-
-
-                if (!leftchest.getPersistentDataContainer().isEmpty()) {
-                    target = leftchest.getBlock();
-                } else {
-                    target = rightchest.getBlock();
-                }
-            }
-        }
-        return target;
-    }
 
 
     public static List<UUID> getAdminsList(PersistentDataContainer data) {
@@ -715,6 +689,71 @@ public class Utils {
             dataContainer = state.getPersistentDataContainer();
         }
         return dataContainer;
+    }
+
+
+    public static boolean validateContainerValues(PersistentDataContainer container, EzShop shop) {
+        //if true, then it means there is a problem
+
+        if (container == null || shop == null) {
+            return true;
+        }
+
+        if (container.isEmpty()) {
+            if (ShopContainer.isShop(shop.getLocation())) {
+                ShopContainer.deleteShop(shop.getLocation());
+                return true;
+            } else {
+                return true;
+            }
+        } else {
+            //owner, buy, sell, msgtoggle, dbuy, dsell, admins, shareincome, trans, adminshop, rotation
+            List<String> emptyList = new ArrayList<>();
+            List<String> keys = Arrays.asList("owner", "buy", "sell", "msgtoggle", "dbuy", "dsell", "admins", "shareincome", "trans", "adminshop", "rotation", "item");
+            List<String> strings = Arrays.asList("owner", "admins", "trans", "rotation", "item");
+            List<String> integers = Arrays.asList("msgtoggle", "dbuy", "dsell", "shareincome", "adminshop");
+            List<String> doubles = Arrays.asList("buy", "sell");
+            for (String key : keys) {
+
+                if (strings.contains(key)) {
+                    if (!container.has(new NamespacedKey(EzChestShop.getPlugin(), key), PersistentDataType.STRING)) {
+                        emptyList.add(key);
+                    }
+                } else if (integers.contains(key)) {
+                    if (!container.has(new NamespacedKey(EzChestShop.getPlugin(), key), PersistentDataType.INTEGER)) {
+                        emptyList.add(key);
+                    }
+                } else if (doubles.contains(key)) {
+                    if (!container.has(new NamespacedKey(EzChestShop.getPlugin(), key), PersistentDataType.DOUBLE)) {
+                        emptyList.add(key);
+                    }
+                }
+            }
+            if (emptyList.isEmpty()) {
+                return false;
+            } else {
+                ShopContainer.deleteShop(shop.getLocation());
+                //removing everything
+                Block shopBlock = shop.getLocation().getBlock();
+                TileState state = ((TileState)shopBlock.getState());
+                PersistentDataContainer data = state.getPersistentDataContainer();
+                data.remove(new NamespacedKey(EzChestShop.getPlugin(), "owner"));
+                data.remove(new NamespacedKey(EzChestShop.getPlugin(), "buy"));
+                data.remove(new NamespacedKey(EzChestShop.getPlugin(), "sell"));
+                data.remove(new NamespacedKey(EzChestShop.getPlugin(), "item"));
+                data.remove(new NamespacedKey(EzChestShop.getPlugin(), "msgtoggle"));
+                data.remove(new NamespacedKey(EzChestShop.getPlugin(), "dbuy"));
+                data.remove(new NamespacedKey(EzChestShop.getPlugin(), "dsell"));
+                data.remove(new NamespacedKey(EzChestShop.getPlugin(), "admins"));
+                data.remove(new NamespacedKey(EzChestShop.getPlugin(), "shareincome"));
+                data.remove(new NamespacedKey(EzChestShop.getPlugin(), "trans"));
+                data.remove(new NamespacedKey(EzChestShop.getPlugin(), "adminshop"));
+                data.remove(new NamespacedKey(EzChestShop.getPlugin(), "rotation"));
+                state.update();
+                return true;
+            }
+
+        }
     }
 
 

@@ -36,6 +36,7 @@ public class ShopContainer {
     public static void queryShopsToMemory() {
         Database db = EzChestShop.getPlugin().getDatabase();
         shopMap = db.queryShops();
+
     }
 
     /**
@@ -48,7 +49,10 @@ public class ShopContainer {
         db.deleteEntry("location", Utils.LocationtoString(loc),
                 "shopdata");
         shopMap.remove(loc);
-        EzShop.hideHologram(loc);
+
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            PlayerCloseToChestListener.hideHologram(p, loc);
+        }
     }
 
     /**
@@ -151,28 +155,15 @@ public class ShopContainer {
      *
      * @return a copy of all Shops as stored in memory.
      */
-    public static List<Location> getShops() {
-        return new ArrayList<>(shopMap.keySet());
+    public static List<EzShop> getShops() {
+        return new ArrayList<>(shopMap.values());
     }
 
-    /**
-     * Get a Shop from Memory using it's location.
-     *
-     * @param loc
-     * @return
-     */
-    public static EzShop getShop(Location loc) {
-        return shopMap.get(loc);
-    }
-
-    /**
-     * Get a Shop from Memory using it's location as a String.
-     *
-     * @param sloc
-     * @return
-     */
-    public static EzShop getShop(String sloc) {
-        return shopMap.get(Utils.StringtoLocation(sloc));
+    public static EzShop getShop(Location location) {
+        if (isShop(location)) {
+            return shopMap.get(location);
+        }
+        return null;
     }
 
     public static ShopSettings getShopSettings(Location loc) {
@@ -427,21 +418,37 @@ public class ShopContainer {
     }
 
 
+
+
     public static void startSqlQueueTask() {
         Bukkit.getScheduler().runTaskTimer(EzChestShop.getPlugin(), new Runnable() {
             @Override
             public void run() {
 
                 //now looping through all shops and executing mysql commands
-                for (EzShop shop : shopMap.values()) {
-                    if (shop.getSqlQueue().isChanged()) {
-                        //ok then it's time to execute the mysql thingys
-                        SqlQueue queue = shop.getSqlQueue();
-                        HashMap<Changes, Object> changes = queue.getChangesList();
-                        for (Changes change : changes.keySet()) {
-                            //mysql job / you can get the value using Changes.
-                        }
 
+                for (EzShop shop : shopMap.values()) {
+                    if (shop.getSettings().getSqlQueue().isChanged()) {
+                        Database db = EzChestShop.getPlugin().getDatabase();
+                        //ok then it's time to execute the mysql thingys
+                        SqlQueue queue = shop.getSettings().getSqlQueue();
+                        HashMap<Changes, Object> changes = queue.getChangesList();
+                        String sloc = shop.getSettings().getSloc();
+                        for (Changes change : changes.keySet()) {
+                            Object valueObject = changes.get(change);
+
+                            //mysql job / you can get the value using Changes.
+                            if (change.theClass == String.class) {
+                                //well its string
+                                String value = (String) valueObject;
+                                db.setString("location", sloc, change.databaseValue, "shopdata", value);
+
+                            } else if (change.theClass == Boolean.class) {
+                                //well its boolean
+                                boolean value = (Boolean) valueObject;
+                                db.setBool("location", sloc, change.databaseValue, "shopdata", value);
+                            }
+                        }
 
                         //the last thing has to be clearing the SqlQueue object so don't remove this
                         queue.resetChangeList(shop.getSettings()); //giving new shop settings to keep the queue updated
@@ -451,6 +458,37 @@ public class ShopContainer {
 
             }
         }, 0, 20 * 60); //for now leaving it as non-editable value
+    }
+
+    public static void saveSqlQueueCache() {
+        for (EzShop shop : shopMap.values()) {
+            if (shop.getSettings().getSqlQueue().isChanged()) {
+                Database db = EzChestShop.getPlugin().getDatabase();
+                //ok then it's time to execute the mysql thingys
+                SqlQueue queue = shop.getSettings().getSqlQueue();
+                HashMap<Changes, Object> changes = queue.getChangesList();
+                String sloc = shop.getSettings().getSloc();
+                for (Changes change : changes.keySet()) {
+                    Object valueObject = changes.get(change);
+
+                    //mysql job / you can get the value using Changes.
+                    if (change.theClass == String.class) {
+                        //well its string
+                        String value = (String) valueObject;
+                        db.setString("location", sloc, change.databaseValue, "shopdata", value);
+
+                    } else if (change.theClass == Boolean.class) {
+                        //well its boolean
+                        boolean value = (Boolean) valueObject;
+                        db.setBool("location", sloc, change.databaseValue, "shopdata", value);
+                    }
+                }
+
+                //the last thing has to be clearing the SqlQueue object so don't remove this
+                queue.resetChangeList(shop.getSettings()); //giving new shop settings to keep the queue updated
+
+            }
+        }
     }
 
 /*

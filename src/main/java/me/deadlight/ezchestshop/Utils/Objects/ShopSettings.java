@@ -1,8 +1,7 @@
 package me.deadlight.ezchestshop.Utils.Objects;
 
 import me.deadlight.ezchestshop.Data.Config;
-import me.deadlight.ezchestshop.Data.SQLite.Database;
-import me.deadlight.ezchestshop.EzChestShop;
+import me.deadlight.ezchestshop.Enums.Changes;
 
 public class ShopSettings {
 
@@ -15,6 +14,8 @@ public class ShopSettings {
     private String trans;
     private boolean adminshop;
     private String rotation;
+    private SqlQueue sqlQueue;
+    private EzShop assignedShop;
 
     public ShopSettings(String sloc, boolean msgtoggle, boolean dbuy, boolean dsell, String admins, boolean shareincome,
                         String trans, boolean adminshop, String rotation) {
@@ -39,6 +40,8 @@ public class ShopSettings {
         this.trans = settings.trans;
         this.adminshop = settings.adminshop;
         this.rotation = settings.rotation;
+        this.assignedShop = settings.assignedShop;
+        this.sqlQueue = settings.sqlQueue;
     }
 
     public ShopSettings clone() {
@@ -51,9 +54,7 @@ public class ShopSettings {
 
     public ShopSettings setMsgtoggle(boolean msgtoggle) {
         this.msgtoggle = msgtoggle;
-//        Database db = EzChestShop.getPlugin().getDatabase();
-//        db.setBool("location", sloc,
-//                "msgToggle", "shopdata", msgtoggle);
+        sqlQueue.setChange(Changes.MESSAGE_TOGGLE, msgtoggle);
         return this;
     }
 
@@ -63,9 +64,7 @@ public class ShopSettings {
 
     public ShopSettings setDbuy(boolean dbuy) {
         this.dbuy = dbuy;
-//        Database db = EzChestShop.getPlugin().getDatabase();
-//        db.setBool("location", sloc,
-//                "buyDisabled", "shopdata", dbuy);
+        sqlQueue.setChange(Changes.DISABLE_BUY, dbuy);
         return this;
     }
 
@@ -75,9 +74,7 @@ public class ShopSettings {
 
     public ShopSettings setDsell(boolean dsell) {
         this.dsell = dsell;
-//        Database db = EzChestShop.getPlugin().getDatabase();
-//        db.setBool("location", sloc,
-//                "sellDisabled", "shopdata", dsell);
+        sqlQueue.setChange(Changes.DISABLE_SELL, dsell);
         return this;
     }
 
@@ -87,9 +84,7 @@ public class ShopSettings {
 
     public ShopSettings setAdmins(String admins) {
         this.admins = admins;
-//        Database db = EzChestShop.getPlugin().getDatabase();
-//        db.setString("location", sloc,
-//                "admins", "shopdata", admins);
+        sqlQueue.setChange(Changes.ADMINS_LIST, admins);
         return this;
     }
 
@@ -99,9 +94,7 @@ public class ShopSettings {
 
     public ShopSettings setShareincome(boolean shareincome) {
         this.shareincome = shareincome;
-//        Database db = EzChestShop.getPlugin().getDatabase();
-//        db.setBool("location", sloc,
-//                "shareIncome", "shopdata", shareincome);
+        sqlQueue.setChange(Changes.SHAREINCOME, shareincome);
         return this;
     }
 
@@ -111,9 +104,7 @@ public class ShopSettings {
 
     public ShopSettings setTrans(String trans) {
         this.trans = trans;
-//        Database db = EzChestShop.getPlugin().getDatabase();
-//        db.setString("location", sloc,
-//                "transactions", "shopdata", trans);
+        sqlQueue.setChange(Changes.TRANSACTIONS, trans);
         return this;
     }
 
@@ -123,9 +114,7 @@ public class ShopSettings {
 
     public ShopSettings setAdminshop(boolean adminshop) {
         this.adminshop = adminshop;
-//        Database db = EzChestShop.getPlugin().getDatabase();
-//        db.setBool("location", sloc,
-//                "adminshop", "shopdata", adminshop);
+        sqlQueue.setChange(Changes.IS_ADMIN, adminshop);
         return this;
     }
 
@@ -135,9 +124,26 @@ public class ShopSettings {
 
     public ShopSettings setRotation(String rotation) {
         this.rotation = rotation;
-//        Database db = EzChestShop.getPlugin().getDatabase();
-//        db.setString("location", sloc,
-//                "rotation", "shopdata", rotation);
+        sqlQueue.setChange(Changes.ROTATION, rotation);
         return this;
+    }
+
+    public void assignShop(EzShop shop) {
+        this.assignedShop = shop;
+    }
+    public EzShop getAssignedShop() {
+        return this.assignedShop;
+    }
+
+    public String getSloc() {
+        return this.sloc;
+    }
+
+    public SqlQueue getSqlQueue() {
+        return this.sqlQueue;
+    }
+
+    public void createSqlQueue() {
+        this.sqlQueue = new SqlQueue(assignedShop.getLocation(), this);
     }
 }
